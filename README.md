@@ -20,4 +20,4 @@
 
 Deploy instantly with one click:  
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/your-username/xplorer)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/PhantomCode-CyberReign/Xplorer.git)
