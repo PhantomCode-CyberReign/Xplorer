@@ -1,0 +1,42 @@
+{
+  "name": "Xplorer",
+  "description": "Xplorer — Adult meta-search engine (Flask based). Generates search links across multiple porn sites. Includes age-gate, theme toggle, and country selector.",
+  "repository": "https://github.com/your-username/xplorer",
+  "keywords": [
+    "flask",
+    "search",
+    "adult",
+    "meta-search",
+    "heroku"
+  ],
+  "addons": [
+    {
+      "plan": "heroku-postgresql"
+    }
+  ],
+  "env": {
+    "FLASK_ENV": {
+      "description": "Flask environment",
+      "value": "production"
+    },
+    "SECRET_KEY": {
+      "description": "Flask secret key for sessions/cookies",
+      "generator": "secret"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "scripts": {
+    "postdeploy": "echo 'Xplorer deployed successfully on Heroku!'"
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "image": "heroku/python"
+}
