@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Results for "{{ query }}"</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="app-body">
+<main class="container">
+<h2>Results for "{{ query }}"</h2>
+<p class="muted">Country: {{ country }}</p>
+
+
+<div class="openall"><button class="btn" onclick="openAll()">Open all in new tabs</button></div>
+
+
+{% for r in results %}
+<div class="row">
+<div class="row-head">{{ r.site }}</div>
+<div class="row-body">
+<a class="result-link" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">Open on {{ r.site }}</a>
+</div>
+</div>
+{% endfor %}
+
+
+<p class="muted">If popup blocker prevents opening multiple tabs, click individual links.</p>
+<p><a href="/">Back to search</a></p>
+</main>
+
+
+<script>
+function openAll(){
+var links = document.querySelectorAll('.result-link');
+links.forEach(function(a){ window.open(a.href, '_blank'); });
+}
+</script>
+</body>
+</html>
