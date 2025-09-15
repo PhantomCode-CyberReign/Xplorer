@@ -1,0 +1,53 @@
+<!doctype html>
+<body class="app-body">
+<header class="topbar">
+<div class="brand">Xplorer</div>
+<form id="themeForm" method="post" action="/set_theme" class="theme-form">
+<input type="hidden" name="theme" id="themeInput" value="dark">
+<button type="button" class="btn ghost" onclick="toggleTheme()">Toggle Theme</button>
+</form>
+</header>
+
+
+<main class="container">
+<h1>Search videos across multiple sites</h1>
+<form action="/search" method="get" class="search-form">
+<input name="q" placeholder="Search query..." required />
+<select name="country">
+<option value="ALL">All Countries</option>
+<option value="US">United States</option>
+<option value="GB">United Kingdom</option>
+<option value="IN">India</option>
+</select>
+
+
+<div class="sites">
+{% for s in sites %}
+<label class="chip"><input type="checkbox" name="site" value="{{ s }}" checked> {{ s }}</label>
+{% endfor %}
+</div>
+
+
+<button class="btn primary" type="submit">Search</button>
+</form>
+
+
+<p class="muted">Note: Xplorer does not host content — it redirects to each site's search results.</p>
+</main>
+
+
+<script>
+function toggleTheme(){
+var el = document.body;
+if(el.classList.contains('light')){
+el.classList.remove('light');
+document.getElementById('themeInput').value = 'dark';
+} else {
+el.classList.add('light');
+document.getElementById('themeInput').value = 'light';
+}
+document.getElementById('themeForm').submit();
+}
+</script>
+</body>
+</html>
