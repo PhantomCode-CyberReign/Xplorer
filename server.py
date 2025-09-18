@@ -1,55 +1,86 @@
-from flask import Flask, render_template, request, redirect, make_response, url_for
-if request.cookies.get(AGE_COOKIE) == "1":
-# Default country: detect from param or use "ALL"
-country = request.args.get('country', 'ALL')
-theme = request.cookies.get('theme', 'dark')
-return render_template('index.html', sites=SITES.keys(), country=country, theme=theme)
-return render_template('age_gate.html')
+from flask import Flask, render_template, request
+import requests
+from bs4 import BeautifulSoup
+import urllib.parse
+import time
 
+app = Flask(__name__)
 
-@app.route('/confirm_age', methods=['POST'])
-def confirm_age():
-resp = make_response(redirect(url_for('home')))
-resp.set_cookie(AGE_COOKIE, "1", max_age=60*60*24*30)
-return resp
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
+}
 
+# Site-specific simple scrapers (best-effort). Add or tune selectors as needed.
+def scrape_pornhub(query, country="ALL"):
+    q = urllib.parse.quote_plus(query)
+    url = f"https://www.pornhub.com/video/search?search={q}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(r.text, "lxml")
+        cards = []
+        for card in soup.select("div.phimage, div.pcVideoList"):  # try a couple selectors
+            a = card.find("a", href=True)
+            img = card.find("img")
+            title = img.get("alt") if img and img.get("alt") else (a.get("title") if a and a.get("title") else None)
+            thumb = img.get("data-thumb_url") or (img.get("src") if img else None)
+            link = ("https://www.pornhub.com" + a['href']) if a else None
+            if title and link:
+                cards.append({"title": title.strip(), "thumb": thumb, "url": link})
+            if len(cards) >= 12:
+                break
+        return cards
+    except Exception as e:
+        print("pornhub scrape err:", e)
+        return []
 
-@app.route('/set_theme', methods=['POST'])
-def set_theme():
-theme = request.form.get('theme', 'dark')
-resp = make_response(redirect(url_for('home')))
-resp.set_cookie('theme', theme, max_age=60*60*24*365)
-return resp
+def scrape_xvideos(query, country="ALL"):
+    q = urllib.parse.quote_plus(query)
+    url = f"https://www.xvideos.com/?k={q}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(r.text, "lxml")
+        cards = []
+        for item in soup.select("div.thumb, div.video-thumb"):
+            a = item.find("a", href=True)
+            img = item.find("img")
+            title = img.get("alt") if img and img.get("alt") else (a.get("title") if a and a.get("title") else None)
+            thumb = img.get("data-src") or img.get("src") if img else None
+            link = ("https://www.xvideos.com" + a['href']) if a else None
+            if title and link:
+                cards.append({"title": title.strip(), "thumb": thumb, "url": link})
+            if len(cards) >= 12:
+                break
+        return cards
+    except Exception as e:
+        print("xvideos scrape err:", e)
+        return []
 
+# Add more scrapers for other sites similarly (xhamster, xnxx, redtube)...
 
-@app.route('/search', methods=['GET', 'POST'])
-def search():
-q = request.values.get('q', '').strip()
-if not q:
-return redirect(url_for('home'))
+SITE_SCRAPERS = {
+    "PornHub": scrape_pornhub,
+    "XVideos": scrape_xvideos,
+    # "XNXX": scrape_xnxx,
+    # "RedTube": scrape_redtube,
+    # "XHamster": scrape_xhamster
+}
 
+@app.route("/")
+def index():
+    q = request.args.get("q", "")
+    country = request.args.get("country", "ALL")
+    results = {}
+    if q:
+        # for each site run scraper (sequential; you can parallelize later)
+        for site_name, scraper in SITE_SCRAPERS.items():
+            try:
+                cards = scraper(q, country)
+            except Exception as e:
+                print("scraper error for", site_name, e)
+                cards = []
+            results[site_name] = cards
+            time.sleep(0.5)  # polite delay
+    return render_template("index.html", query=q, results=results)
 
-selected = request.values.getlist('site')
-if not selected:
-selected = list(SITES.keys())
-
-
-country = request.values.get('country', 'ALL')
-encoded = urllib.parse.quote_plus(q)
-results = []
-for name in selected:
-pattern = SITES.get(name)
-if not pattern:
-continue
-url = pattern.replace('{q}', encoded)
-# If pattern supports country placeholder, replace it (optional)
-url = url.replace('{cc}', country)
-results.append({'site': name, 'url': url})
-
-
-return render_template('results.html', query=q, results=results, country=country)
-
-
-if __name__ == '__main__':
-port = int(os.environ.get('PORT', 5000))
-app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080, debug=True)
